@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
+import sys
 
 #Create your df here:
 print('Date-A-Scientist')
@@ -60,45 +61,55 @@ plt.hist(df.drugs)
 plt.xlabel("Drugs")
 plt.ylabel("Frequency")
 plt.show()
+print('')
 
 ### Formulate a Question
 print('Possible responses on column \'Zodiac signs\'')
 print(df.sign.value_counts())
+print('')
 
 ### Augment your Data
 
 #import np because in my data exist values NaN
 import numpy as np
 
-#all_data and df This is the same?
-all_data = df
+#df and df This is the same?
+#all_data = df <- Yes, it's confusing, I resigned all_data
 #Drinks
+print('Possible responses on column \'Drinks\'')
+print(df.drinks.value_counts())
+print('')
 drink_mapping = {np.nan: 0, "not at all": 0, "rarely": 1, "socially": 2, "often": 3, "very often": 4, "desperately": 5}
-all_data["drinks_code"] = all_data.drinks.map(drink_mapping)
-print(all_data["drinks_code"])
+df["drinks_code"] = df.drinks.map(drink_mapping)
 
 #Smokes
+print('Possible responses on column \'Smokes\'')
 print(df.smokes.value_counts())
+print('')
 smokes_mapping = {np.nan: 0, "no": 0, "sometimes": 1, "when drinking": 2, "yes": 3, "trying to quit": 4}
-all_data["smokes_code"] = all_data.smokes.map(smokes_mapping)
-print(all_data["smokes_code"])
+df["smokes_code"] = df.smokes.map(smokes_mapping)
 
 #Drugs
+print('Possible responses on column \'Drugs\'')
 print(df.drugs.value_counts())
+print('')
 drugs_mapping = {np.nan: 0, "never": 0, "sometimes": 1, "often": 2}
-all_data["drugs_code"] = all_data.drugs.map(drugs_mapping)
-print(all_data["drugs_code"])
+df["drugs_code"] = df.drugs.map(drugs_mapping)
 
 #Essay
 essay_cols = ["essay0","essay1","essay2","essay3","essay4","essay5","essay6","essay7","essay8","essay9"]
 
 # Removing the NaNs
-all_essays = all_data[essay_cols].replace(np.nan, '', regex=True)
+all_essays = df[essay_cols].replace(np.nan, '', regex=True)
 # Combining the essays
-all_essays = all_essays[essay_cols].apply(lambda x: ' '.join(x), axis=1)
+#all_essays = all_essays[essay_cols].apply(lambda x: ' '.join(x), axis=1)
+all_essays = all_essays[essay_cols].apply(' '.join, axis=1)
 
-all_data["essay_len"] = all_essays.apply(lambda x: len(x))
-print(all_data["essay_len"])
+#df["essay_len"] = all_essays.apply(lambda x: len(x)) - I corrected this row
+df["essay_len"] = all_essays.apply(len)
+print('10 first rows on column \'Essay len\'')
+print(df["essay_len"].head(10))
+print('')
 
 #Column with average word length
 def average_word_length(words):
@@ -108,31 +119,37 @@ def average_word_length(words):
     return 0
   return sum(len(word) for word in words) / div
 
-all_data["avg_word_length"] = all_essays.apply(lambda x: average_word_length(x) )
-print(all_data["avg_word_length"])
+#df["avg_word_length"] = all_essays.apply(lambda x: average_word_length(x) )
+df["avg_word_length"] = all_essays.apply(average_word_length)
+print('10 first rows on column \'Avg word length\'')
+print(df["avg_word_length"].head(10))
+print('')
 #Column with the frequency of the words "I" or "me" appearing in the essays.
 
-def frequency_words(words,find_words):
+def frequency_words(words):
   words = words.split()
   count_words = 0
   for word in words:
-    for find in find_words:
+    for find in ['I','me']:
       if find==word:
         count_words+=1
   if len(words)==0:
     return 0
   return (count_words/len(words))
 
-all_data["frequency_words"] = all_essays.apply(lambda x: frequency_words(x,['I','me']))
-print(all_data["frequency_words"])
+#df["frequency_words"] = all_essays.apply(lambda x: frequency_words(x,['I','me']))
+df["frequency_words"] = all_essays.apply(frequency_words)
+print('10 first rows on column \'Frequency words\'')
+print(df["frequency_words"].head(10))
+print('')
 
 ### Normalize your Data!
 from sklearn import preprocessing
 
-feature_data = all_data[['smokes_code', 'drinks_code', 'drugs_code', 'essay_len', 'avg_word_length']]
+feature_data = df[['smokes_code', 'drinks_code', 'drugs_code', 'essay_len', 'avg_word_length']]
 
 #Print my data
-print(feature_data.values)
+#print(feature_data.values)
 x = feature_data.values
 min_max_scaler = preprocessing.MinMaxScaler()
 x_scaled = min_max_scaler.fit_transform(x)
@@ -162,11 +179,21 @@ def ShareData(arr,size,normalization=True):
 # arrays of results
 results = []
 
+#the data exploration
+def data_exploration(x,y,xlabel,ylabel):   
+  plt.clf()
+  plt.scatter(x.values.reshape(-1, 1),y)
+  plt.ylabel(ylabel)
+  plt.xlabel(xlabel)
+  plt.show()
+
+# 1 question
 # training labels for first question
 sex_mapping = {np.nan: 0, "m": 0, "f": 1}
-all_data["sex_code"] = all_data.sex.map(sex_mapping)
-print(all_data["sex_code"])
-training_labels_first_question, test_labels_first_question = ShareData(all_data["sex_code"],0.6)
+df["sex_code"] = df.sex.map(sex_mapping)
+print('10 first rows on column \'Sex code\'')
+print(df["sex_code"].head(10))
+print('')
 # training points for first question
 education_mapping = {np.nan: 0, "graduated from college/university": 1,"graduated from masters program":2,"working on college/university":3,"working on masters program":4,
 "graduated from two-year college":5,"graduated from high school":6,"graduated from ph.d program":7,"graduated from law school":8,"working on two-year college":9,
@@ -174,55 +201,74 @@ education_mapping = {np.nan: 0, "graduated from college/university": 1,"graduate
 "graduated from med school":15,"working on space camp":16,"working on law school":17,"two-year college":18,"working on med school":19,"dropped out of two-year college":20,
 "dropped out of masters program":21,"masters program":22,"dropped out of ph.d program":23,"dropped out of high school":24,"high school":25,"working on high school":26,
 "space camp":27,"ph.d program":28,"law school":29,"dropped out of law school":30,"dropped out of med school":31,"med school":32}
-all_data["education_code"] = all_data.education.map(education_mapping)
-print(all_data["education_code"])
-
+df["education_code"] = df.education.map(education_mapping)
+#data exploration
+data_exploration(df["sex_code"],df.income,"Sex Code","Income")
+data_exploration(df["sex_code"],df["education_code"],"Sex Code","Education Code")
+data_exploration(df.income,df["education_code"],"Income","Education Code")
+#preparing data
+training_labels_first_question, test_labels_first_question = ShareData(df["sex_code"],0.6)
 training_points = []
-for i in range(len(all_data["education_code"])):
-  training_points.append([all_data["education_code"][i],all_data.income[i]])
-
+for i in range(len(df["education_code"])):
+  training_points.append([df["education_code"][i],df.income[i]])
 training_points_first_question, test_points_first_question = ShareData(training_points,0.6)
 
+# 2 question
 # training labels for second question
-print(all_data["education_code"])
-training_labels_second_question, test_labels_second_question = ShareData(all_data["education_code"],0.6)
-
+print('10 first rows on column \'Education code\'')
+print(df["education_code"].head(10))
+print('')
 # training points for second question
-print(all_data["essay_len"])
+print('10 first rows on column \'Essay len\'')
+print(df["essay_len"].head(10))
+print('')
+#data exploration
+data_exploration(df["education_code"],df['essay_len'],"Education Code","Essay len")
+#preparing data
+training_labels_second_question, test_labels_second_question = ShareData(df["education_code"],0.6)
 training_points = []
-for i in range(len(all_data["essay_len"])):
-  training_points.append([all_data["essay_len"][i]])
-
+for i in range(len(df["essay_len"])):
+  training_points.append([df["essay_len"][i]])
 training_points_second_question, test_points_second_question = ShareData(training_points,0.6)
 
+# 3 question
 # training labels for third question
-print(all_data.income)
-training_labels_third_question, test_labels_third_question = ShareData(all_data.income,0.6)
-
+print('Possible responses on column \'Income\'')
+print(df.income.value_counts())
+print('')
+#data exploration
+data_exploration(df.income,df["essay_len"],"Income","Essay len")
+data_exploration(df.income,df["avg_word_length"],"Income","Avg word length")
+#preparing data
+training_labels_third_question, test_labels_third_question = ShareData(df.income,0.6)
 # training points for third question
-print(all_data["essay_len"])
-print(all_data["avg_word_length"])
 training_points = []
-for i in range(len(all_data["essay_len"])):
-  training_points.append([all_data["essay_len"][i],all_data["avg_word_length"][i]])
+for i in range(len(df["essay_len"])):
+  training_points.append([df["essay_len"][i],df["avg_word_length"][i]])
 training_points_third_question, test_points_third_question = ShareData(training_points,0.6)
 
+# 4 question
 # training labels for four question
-print(all_data.age)
-training_labels_four_question, test_labels_four_question = ShareData(all_data.age,0.6)
+print('Possible responses on column \'Age\'')
+print(df.age.value_counts())
+print('')
+#data exploration
+data_exploration(df.age,df["frequency_words"],"Age","Frequency words")
+#preparing data
+training_labels_four_question, test_labels_four_question = ShareData(df.age,0.6)
 # training points for four question
-print(all_data['frequency_words'])
 training_points = []
-for i in range(len(all_data["frequency_words"])):
-  training_points.append([all_data["frequency_words"][i]])
+for i in range(len(df["frequency_words"])):
+  training_points.append([df["frequency_words"][i]])
 training_points_four_question, test_points_four_question = ShareData(training_points,0.6)
+
 
 #time to run the model
 import time
 start_time = time.time()
 stop_time = (time.time() - start_time)
 
-# K-Nearest Neighbors
+## K-Nearest Neighbors ##
 from sklearn.neighbors import KNeighborsClassifier
 knn_first_question = []
 knn_second_question = []
@@ -245,7 +291,7 @@ for k in range(1, 40):
   knn_second_question.append([guesses_second_question,classifier,[2,"K-Nearest Neighbors"],test_labels_second_question,stop_time])
 results.append(knn_second_question)
 
-# Support Vector Machines
+## Support Vector Machines ##
 from sklearn.svm import SVC
 #1. Can we predict sex with education level and income?
 start_time = time.time() 
@@ -262,7 +308,7 @@ guesses_second_question = classifier.predict(test_points_second_question)
 stop_time = (time.time() - start_time)
 results.append([guesses_second_question,classifier,[2,"Support Vector Machines"],test_labels_second_question,stop_time])
 
-# Naive Bayes
+## Naive Bayes ##
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 #1. Can we predict sex with education level and income?
@@ -282,7 +328,7 @@ results.append([guesses_second_question,classifier,[2,"Naive Bayes"],test_labels
 
 ### Use Regression Techniques
 
-# K-Nearest Neighbors Regression with parameter weights = distance
+## K-Nearest Neighbors Regression with parameter weights = distance ##
 from sklearn.neighbors import KNeighborsRegressor
 knnr_first_question = []
 knnr_second_question = []
@@ -305,7 +351,7 @@ for k in range(1, 40):
   knnr_second_question.append([guesses_four_question,classifier,[4,"K-Nearest Neighbors Regression with parameter weights = distance"],test_labels_four_question,stop_time])
 results.append(knnr_second_question)
 
-# K-Nearest Neighbors Regression with parameter weights = uniform
+## K-Nearest Neighbors Regression with parameter weights = uniform ##
 from sklearn.neighbors import KNeighborsRegressor
 knnr_first_question = []
 knnr_second_question = []
@@ -339,7 +385,7 @@ def Find_validation_accuracy(guesses,test_labels):
   for i in range(len(guesses)):
     if test_labels[i] == guesses[i]:
       num_correct += 1
-  return num_correct
+  return (num_correct/len(guesses))
 
 #Find the accuracy, precision, and recall of each model you used, and create graphs showing how they changed.
 
@@ -349,7 +395,7 @@ def Find_validation_accuracy(guesses,test_labels):
 num_correct = Find_validation_accuracy(results[0][5][0],results[0][5][3])
 print()
 print(""+str(results[0][5][2][1])+" - Question "+str(results[0][5][2][0]))
-print("Accuracy: "+str(num_correct/len(results[0][5][3])))
+print("Accuracy: "+str(num_correct))
 #Precision
 #Recall
 y_pred = results[0][5][0]
@@ -373,7 +419,7 @@ plt.show()
 num_correct = Find_validation_accuracy(results[1][5][0],results[1][5][3])
 print()
 print(""+str(results[1][5][2][1])+" - Question "+str(results[1][5][2][0]))
-print("Accuracy: "+str(num_correct/len(results[1][5][3])))
+print("Accuracy: "+str(num_correct))
 #Precision
 #Recall
 y_pred = results[1][5][0]
@@ -399,7 +445,7 @@ plt.show()
 num_correct = Find_validation_accuracy(results[2][0],results[2][3])
 print()
 print(""+str(results[2][2][1])+" - Question "+str(results[2][2][0]))
-print("Accuracy: "+str(num_correct/len(results[2][3])))
+print("Accuracy: "+str(num_correct))
 #Precision
 #Recall
 y_pred = results[2][0]
@@ -412,7 +458,7 @@ print("time to run the model: "+str(results[2][4]))
 num_correct = Find_validation_accuracy(results[3][0],results[3][3])
 print()
 print(""+str(results[3][2][1])+" - Question "+str(results[3][2][0]))
-print("Accuracy: "+str(num_correct/len(results[3][3])))
+print("Accuracy: "+str(num_correct))
 #Precision
 #Recall
 y_pred = results[3][0]
@@ -427,7 +473,7 @@ print("time to run the model: "+str(results[3][4]))
 num_correct = Find_validation_accuracy(results[4][0],results[4][3])
 print()
 print(""+str(results[4][2][1])+" - Question "+str(results[4][2][0]))
-print("Accuracy: "+str(num_correct/len(results[4][3])))
+print("Accuracy: "+str(num_correct))
 #Precision
 #Recall
 y_pred = results[4][0]
@@ -440,7 +486,7 @@ print("time to run the model: "+str(results[4][4]))
 num_correct = Find_validation_accuracy(results[5][0],results[5][3])
 print()
 print(""+str(results[5][2][1])+" - Question "+str(results[5][2][0]))
-print("Accuracy: "+str(num_correct/len(results[5][3])))
+print("Accuracy: "+str(num_correct))
 #Precision
 #Recall
 y_pred = results[5][0]
@@ -455,7 +501,7 @@ print("time to run the model: "+str(results[5][4]))
 arr = []
 for k in range(0, 39):  
   num_correct = Find_validation_accuracy(results[6][k][0],results[6][k][3])
-  arr.append(num_correct/len(results[6][3]))
+  arr.append(num_correct)
 print()
 print(""+str(results[6][5][2][1])+" - Question "+str(results[6][5][2][0]))
 print("Accuracy: "+str(np.mean(arr)))
@@ -482,7 +528,7 @@ plt.show()
 arr = []
 for k in range(0, 39):  
   num_correct = Find_validation_accuracy(results[7][k][0],results[7][k][3])
-  arr.append(num_correct/len(results[7][3]))
+  arr.append(num_correct)
 print()
 print(""+str(results[7][5][2][1])+" - Question "+str(results[7][5][2][0]))
 print("Accuracy: "+str(np.mean(arr)))
@@ -511,7 +557,7 @@ plt.show()
 arr = []
 for k in range(0, 39):  
   num_correct = Find_validation_accuracy(results[8][k][0],results[8][k][3])
-  arr.append(num_correct/len(results[8][3]))
+  arr.append(num_correct)
 print()
 print(""+str(results[8][5][2][1])+" - Question "+str(results[8][5][2][0]))
 print("Accuracy: "+str(np.mean(arr)))
@@ -538,7 +584,7 @@ plt.show()
 arr = []
 for k in range(0, 39):  
   num_correct = Find_validation_accuracy(results[9][k][0],results[9][k][3])
-  arr.append(num_correct/len(results[9][3]))
+  arr.append(num_correct)
 print()
 print(""+str(results[9][5][2][1])+" - Question "+str(results[9][5][2][0]))
 print("Accuracy: "+str(np.mean(arr)))
